@@ -1,13 +1,4 @@
-from docutils.core import publish_parts
-
-
-from rst_to_md.writer import Writer
-
-
-def rst_to_md(rst):
-    parts = publish_parts(source=rst,
-                          writer=Writer())
-    return parts["whole"]
+from test_util import rst_to_md
 
 
 def test_basic_block_quote():
@@ -15,11 +6,12 @@ def test_basic_block_quote():
 
     This is a test.
     Only a test.
+
 """
 
-    expected = """
-> This is a test.
+    expected = """> This is a test.
 > Only a test.
+
 
 """
 
@@ -27,16 +19,16 @@ def test_basic_block_quote():
     assert md == expected
 
 
-def _test_inline_elements():
+def test_inline_elements():
     rst = """
 
     This is **a** test.
-    Only a test.
-"""
+    Only a test."""
 
-    expected = """
+    expected = """\
 > This is **a** test.
 > Only a test.
+
 
 """
 

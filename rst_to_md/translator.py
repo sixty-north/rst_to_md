@@ -77,11 +77,11 @@ class Translator(nodes.NodeVisitor):
     # TODO: Can we peek ahead to try to determine the language type?
     # TODO: Can we let the user specify the default language to use here?
     def visit_literal_block(self, node):
-        self.body.append('\n{language=python}\n')
+        self.body.append('{language=python}\n')
         self.body.append('~~~~~~~~\n')
 
     def depart_literal_block(self, node):
-        self.body.append('\n~~~~~~~~\n')
+        self.body.append('\n~~~~~~~~\n\n')
 
     def visit_literal(self, node):
         self.body.append(self.defs['literal'][0])
@@ -90,24 +90,15 @@ class Translator(nodes.NodeVisitor):
         self.body.append(self.defs['literal'][1])
 
     def visit_block_quote(self, node):
-        class Quoter:
-            def __init__(self, visitor):
-                self.visitor = visitor
-                self.first = True
-
-            def __call__(self, text_node, text):
-                if text_node.parent.parent is not node:
-                    return text
-
-                if self.first:
-                    text = '> {}'.format(text)
-                    self.first = False
-
-                text = text.replace('\n', '\n> ')
+        def quoter(text_node, text):
+            if text_node.parent.parent is not node:
                 return text
 
-        self.body.append('\n')
-        self.push_text_hook(Quoter(self))
+            text = text.replace('\n', '\n> ')
+            return text
+
+        self.body.append('> ')
+        self.push_text_hook(quoter)
 
     def depart_block_quote(self, node):
         self.pop_text_hook()
@@ -134,7 +125,7 @@ class Translator(nodes.NodeVisitor):
         raise nodes.SkipNode
 
     def visit_document(self, node):
-        pass
+        self.document = node
 
     def depart_document(self, node):
         pass
@@ -146,13 +137,13 @@ class Translator(nodes.NodeVisitor):
         self.body.append(self.defs['emphasis'][1])
 
     def visit_paragraph(self, node):
-        self.ensure_eol()
+        # self.ensure_eol()
         for hook in self.paragraph_hooks:
             hook(node)
         # self.body.append('\n')
 
     def depart_paragraph(self, node):
-        self.body.append('\n')
+        self.body.append('\n\n')
 
     def visit_problematic(self, node):
         self.body.append(self.defs['problematic'][0])
