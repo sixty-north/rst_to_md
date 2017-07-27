@@ -12,6 +12,7 @@ class Writer(writers.Writer):
     """Final translated form of `document`."""
 
     # Add configuration settings for additional Markdown flavours here.
+    # TODO: Look at this stuff more closely.
     settings_spec = (
         'Markdown-Specific Options',
         None,

@@ -35,6 +35,7 @@ class Translator(nodes.NodeVisitor):
             'strong': ('**', '**'),  # Could also use ('__', '__')
             'subscript': ('<sub>', '</sub>'),
             'superscript': ('<sup>', '</sup>'),
+            'literal': ('`', '`'),
             }
 
     # Utility methods
@@ -54,6 +55,19 @@ class Translator(nodes.NodeVisitor):
             self.body.append('\n')
 
     # Node visitor methods
+
+    def visit_literal_block(self, node):
+        self.body.append('\n{language=python}\n')
+        self.body.append('~~~~~~~~\n')
+
+    def depart_literal_block(self, node):
+        self.body.append('\n~~~~~~~~\n')
+
+    def visit_literal(self, node):
+        self.body.append(self.defs['literal'][0])
+
+    def depart_literal(self, node):
+        self.body.append(self.defs['literal'][1])
 
     def visit_Text(self, node):
         text = node.astext()
