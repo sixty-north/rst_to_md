@@ -12,6 +12,7 @@ class Translator(nodes.NodeVisitor):
         self.head = []
         self.body = []
         self.foot = []
+        self.text_prefix = ''
 
         self.section_level = 0
 
@@ -72,8 +73,18 @@ class Translator(nodes.NodeVisitor):
     def depart_literal(self, node):
         self.body.append(self.defs['literal'][1])
 
+    def visit_block_quote(self, node):
+        self.text_prefix = '> '
+
+    def depart_block_quote(self, node):
+        self.text_prefix = ''
+        self.body.append('\n')
+
     def visit_Text(self, node):
         text = node.astext()
+        lines = ('{}{}'.format(self.text_prefix, line)
+                 for line in text.split('\n'))
+        text = '\n'.join(lines)
         self.body.append(text)
 
     def depart_Text(self, node):
