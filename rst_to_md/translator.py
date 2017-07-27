@@ -1,4 +1,25 @@
 from docutils import nodes, languages
+from functools import reduce
+
+
+def prefixer(prefix):
+    def f(node, text):
+        lines = ('{}{}'.format(prefix, line)
+                 for line in text.split('\n'))
+        return '\n'.join(lines)
+    return f
+
+
+def block_quoter(quote_node):
+    def f(node, text):
+        if node.parent.parent is quote_node:
+            lines = ('> {}'.format(line)
+                     for line in text.split('\n'))
+            return '\n'.join(lines)
+        else:
+            return text
+
+    return f
 
 
 class Translator(nodes.NodeVisitor):
@@ -12,7 +33,7 @@ class Translator(nodes.NodeVisitor):
         self.head = []
         self.body = []
         self.foot = []
-        self.text_prefix = ''
+        self.text_processors = []
 
         self.section_level = 0
 
@@ -40,6 +61,12 @@ class Translator(nodes.NodeVisitor):
             }
 
     # Utility methods
+
+    def push_text_processor(self, p):
+        self.text_processors.append(p)
+
+    def pop_text_processor(self):
+        self.text_processors = self.text_processors[:-1]
 
     def astext(self):
         """Return the final formatted document as a string."""
@@ -74,17 +101,16 @@ class Translator(nodes.NodeVisitor):
         self.body.append(self.defs['literal'][1])
 
     def visit_block_quote(self, node):
-        self.text_prefix = '> '
+        self.push_text_processor(block_quoter(node))
 
     def depart_block_quote(self, node):
-        self.text_prefix = ''
+        self.pop_text_processor()
         self.body.append('\n')
 
     def visit_Text(self, node):
-        text = node.astext()
-        lines = ('{}{}'.format(self.text_prefix, line)
-                 for line in text.split('\n'))
-        text = '\n'.join(lines)
+        text = reduce(lambda t, p: p(node, t),
+                      reversed(self.text_processors),
+                      node.astext())
         self.body.append(text)
 
     def depart_Text(self, node):
@@ -194,29 +220,56 @@ class Translator(nodes.NodeVisitor):
         self.body.append('\n---\n\n')
         raise nodes.SkipNode
 
+    def visit_bullet_list(self, node):
+        self.push_text_processor(prefixer('  '))
+
+    def depart_bullet_list(self, node):
+        self.pop_text_processor()
+
+    def visit_list_item(self, node):
+        def list_item(node, text):
+            self.pop_text_processor()
+            return '- {}'.format(text)
+
+        self.push_text_processor(list_item)
+
+    def depart_list_item(self, node):
+        pass
+
 # The following code adds visit/depart methods for any reSturcturedText element
 # which we have not explicitly implemented above.
 
 # All reStructuredText elements:
 rst_elements = ('abbreviation', 'acronym', 'address', 'admonition',
-    'attention', 'attribution', 'author', 'authors', 'block_quote',
-    'bullet_list', 'caption', 'caution', 'citation', 'citation_reference',
-    'classifier', 'colspec', 'comment', 'compound', 'contact', 'container',
-    'copyright', 'danger', 'date', 'decoration', 'definition',
-    'definition_list', 'definition_list_item', 'description', 'docinfo',
-    'doctest_block', 'document', 'emphasis', 'entry', 'enumerated_list',
-    'error', 'field', 'field_body', 'field_list', 'field_name', 'figure',
-    'footer', 'footnote', 'footnote_reference', 'generated', 'header',
-    'hint', 'image', 'important', 'inline', 'label', 'legend', 'line',
-    'line_block', 'list_item', 'literal', 'literal_block', 'math',
-    'math_block', 'note', 'option' ,'option_argument', 'option_group',
-    'option_list', 'option_list_item', 'option_string', 'organization',
-    'paragraph', 'pending', 'problematic', 'raw', 'reference', 'revision',
-    'row', 'rubric', 'section', 'sidebar', 'status', 'strong', 'subscript',
+    'attention', 'attribution', 'author', 'authors',
+    'block_quote', 'bullet_list',
+    'caption', 'caution', 'citation', 'citation_reference', 'classifier',
+    'colspec', 'comment', 'compound', 'contact', 'container',
+    'copyright',
+    'danger', 'date', 'decoration', 'definition', 'definition_list',
+    'definition_list_item', 'description', 'docinfo', 'doctest_block',
+    'document',
+    'emphasis', 'entry', 'enumerated_list', 'error',
+    'field', 'field_body', 'field_list', 'field_name', 'figure', 'footer',
+    'footnote', 'footnote_reference',
+    'generated',
+    'header', 'hint',
+    'image', 'important', 'inline',
+    'label', 'legend', 'line', 'line_block', 'list_item', 'literal',
+    'literal_block',
+    'math', 'math_block',
+    'note',
+    'option', 'option_argument', 'option_group', 'option_list',
+    'option_list_item', 'option_string', 'organization',
+    'paragraph', 'pending', 'problematic',
+    'raw', 'reference', 'revision', 'row', 'rubric',
+    'section', 'sidebar', 'status', 'strong', 'subscript',
     'substitution_definition', 'substitution_reference', 'subtitle',
-    'superscript', 'system_message', 'table', 'target', 'tbody,' 'term',
-    'tgroup', 'thead', 'tip', 'title', 'title_reference', 'topic',
-    'transition','version','warning',)
+    'superscript', 'system_message',
+    'table', 'target', 'tbody,' 'term', 'tgroup', 'thead', 'tip', 'title',
+    'title_reference', 'topic', 'transition',
+    'version',
+    'warning',)
 
 ##TODO Eventually we should silently ignore unsupported reStructuredText
 ##     constructs and document somewhere that they are not supported.
