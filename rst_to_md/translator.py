@@ -2,26 +2,6 @@ from docutils import nodes, languages
 from functools import reduce
 
 
-def prefixer(prefix):
-    def f(node, text):
-        lines = ('{}{}'.format(prefix, line)
-                 for line in text.split('\n'))
-        return '\n'.join(lines)
-    return f
-
-
-def block_quoter(quote_node):
-    def f(node, text):
-        if node.parent.parent is quote_node:
-            lines = ('> {}'.format(line)
-                     for line in text.split('\n'))
-            return '\n'.join(lines)
-        else:
-            return text
-
-    return f
-
-
 class Translator(nodes.NodeVisitor):
 
     def __init__(self, document):
@@ -33,7 +13,9 @@ class Translator(nodes.NodeVisitor):
         self.head = []
         self.body = []
         self.foot = []
-        self.text_processors = []
+
+        self.text_hooks = []
+        self.paragraph_hooks = []
 
         self.section_level = 0
 
@@ -62,11 +44,18 @@ class Translator(nodes.NodeVisitor):
 
     # Utility methods
 
-    def push_text_processor(self, p):
-        self.text_processors.append(p)
+    def push_text_hook(self, p):
+        self.text_hooks.append(p)
 
-    def pop_text_processor(self):
-        self.text_processors = self.text_processors[:-1]
+    def pop_text_hook(self):
+        self.text_hooks = self.text_hooks[:-1]
+
+    def push_paragraph_hook(self, p):
+        self.paragraph_hooks.append(p)
+
+    def pop_paragraph_hook(self):
+        self.paragraph_hooks = self.paragraph_hooks[:-1]
+
 
     def astext(self):
         """Return the final formatted document as a string."""
@@ -101,15 +90,32 @@ class Translator(nodes.NodeVisitor):
         self.body.append(self.defs['literal'][1])
 
     def visit_block_quote(self, node):
-        self.push_text_processor(block_quoter(node))
+        class Quoter:
+            def __init__(self, visitor):
+                self.visitor = visitor
+                self.first = True
+
+            def __call__(self, text_node, text):
+                if text_node.parent.parent is not node:
+                    return text
+
+                if self.first:
+                    text = '> {}'.format(text)
+                    self.first = False
+
+                text = text.replace('\n', '\n> ')
+                return text
+
+        self.body.append('\n')
+        self.push_text_hook(Quoter(self))
 
     def depart_block_quote(self, node):
-        self.pop_text_processor()
+        self.pop_text_hook()
         self.body.append('\n')
 
     def visit_Text(self, node):
-        text = reduce(lambda t, p: p(node, t),
-                      reversed(self.text_processors),
+        text = reduce(lambda t, h: h(node, t),
+                      self.text_hooks,
                       node.astext())
         self.body.append(text)
 
@@ -141,7 +147,9 @@ class Translator(nodes.NodeVisitor):
 
     def visit_paragraph(self, node):
         self.ensure_eol()
-        self.body.append('\n')
+        for hook in self.paragraph_hooks:
+            hook(node)
+        # self.body.append('\n')
 
     def depart_paragraph(self, node):
         self.body.append('\n')
@@ -221,17 +229,17 @@ class Translator(nodes.NodeVisitor):
         raise nodes.SkipNode
 
     def visit_bullet_list(self, node):
-        self.push_text_processor(prefixer('  '))
+        pass
 
     def depart_bullet_list(self, node):
-        self.pop_text_processor()
+        pass
 
     def visit_list_item(self, node):
         def list_item(node, text):
-            self.pop_text_processor()
+            self.pop_text_hook()
             return '- {}'.format(text)
 
-        self.push_text_processor(list_item)
+        self.push_text_hook(list_item)
 
     def depart_list_item(self, node):
         pass
