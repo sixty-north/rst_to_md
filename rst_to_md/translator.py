@@ -44,9 +44,10 @@ class Translator(nodes.NodeVisitor):
         """Return the final formatted document as a string."""
         return ''.join(self.head + self.body + self.foot)
 
+    # TODO: Why are we doing this?
     def deunicode(self, text):
-        text = text.replace(u'\xa0', '\\ ')
-        text = text.replace(u'\u2020', '\\(dg')
+        text = text.replace(u'\xa0', u' ')  # non-breaking space
+        text = text.replace(u'\u2020', '\\(dg')  # dagger
         return text
 
     def ensure_eol(self):
@@ -56,6 +57,8 @@ class Translator(nodes.NodeVisitor):
 
     # Node visitor methods
 
+    # TODO: Can we peek ahead to try to determine the language type?
+    # TODO: Can we let the user specify the default language to use here?
     def visit_literal_block(self, node):
         self.body.append('\n{language=python}\n')
         self.body.append('~~~~~~~~\n')
