@@ -1,46 +1,4 @@
-# -*- coding: utf-8 -*-
-
-"""Simple Markdown writer for reStructuredText."""
-
-__docformat__ = 'reStructuredText'
-
-import docutils
-from docutils import frontend, nodes, writers, languages
-try:
-    import roman
-except ImportError:
-    import docutils.utils.roman as roman
-
-
-class Writer(writers.Writer):
-
-    supported = ('markdown',)
-    """Formats this writer supports."""
-
-    output = None
-    """Final translated form of `document`."""
-
-    # Add configuration settings for additional Markdown flavours here.
-    settings_spec = (
-        'Markdown-Specific Options',
-        None,
-        (('Extended Markdown syntax.',
-          ['--extended-markdown'],
-          {'default': 0, 'action': 'store_true',
-           'validator': frontend.validate_boolean}),
-         ('Strict Markdown syntax. Default: true',
-          ['--strict-markdown'],
-          {'default': 1, 'action': 'store_true',
-           'validator': frontend.validate_boolean}),))
-
-    def __init__(self):
-        writers.Writer.__init__(self)
-        self.translator_class = Translator
-
-    def translate(self):
-        visitor = self.translator_class(self.document)
-        self.document.walkabout(visitor)
-        self.output = visitor.astext()
+from docutils import nodes, languages
 
 
 class Translator(nodes.NodeVisitor):
@@ -57,24 +15,26 @@ class Translator(nodes.NodeVisitor):
 
         self.section_level = 0
 
-        ##TODO docinfo items can go in a footer HTML element (store in self.foot).
+        # TODO docinfo items can go in a footer HTML element (store in
+        # self.foot).
+
         self._docinfo = {
-            'title' : '',
-            'subtitle' : '',
-            'author' : [],
-            'date' : '',
-            'copyright' : '',
-            'version' : '',
+            'title': '',
+            'subtitle': '',
+            'author': [],
+            'date': '',
+            'copyright': '',
+            'version': '',
             }
 
         # Customise Markdown syntax here. Still need to add literal, term,
         # indent, problematic etc...
         self.defs = {
             'emphasis': ('*', '*'),   # Could also use ('_', '_')
-            'problematic' : ('\n\n', '\n\n'),
-            'strong' : ('**', '**'),  # Could also use ('__', '__')
-            'subscript' : ('<sub>', '</sub>'),
-            'superscript' : ('<sup>', '</sup>'),
+            'problematic': ('\n\n', '\n\n'),
+            'strong': ('**', '**'),  # Could also use ('__', '__')
+            'subscript': ('<sub>', '</sub>'),
+            'superscript': ('<sup>', '</sup>'),
             }
 
     # Utility methods
@@ -159,12 +119,13 @@ class Translator(nodes.NodeVisitor):
     def visit_subtitle(self, node):
         if isinstance(node.parent, nodes.document):
             self.visit_docinfo_item(node, 'subtitle')
-            raise SkipNode
+            raise nodes.SkipNode
 
     def visit_superscript(self, node):
         self.body.append(self.defs['superscript'][0])
 
     def depart_superscript(self, node):
+
         self.body.append(self.defs['superscript'][1])
 
     def visit_system_message(self, node):
@@ -210,26 +171,26 @@ class Translator(nodes.NodeVisitor):
 
 # All reStructuredText elements:
 rst_elements = ('abbreviation', 'acronym', 'address', 'admonition',
-    'attention', 'attribution', 'author', 'authors', 'block_quote', 
-    'bullet_list', 'caption', 'caution', 'citation', 'citation_reference', 
-    'classifier', 'colspec', 'comment', 'compound', 'contact', 'container', 
+    'attention', 'attribution', 'author', 'authors', 'block_quote',
+    'bullet_list', 'caption', 'caution', 'citation', 'citation_reference',
+    'classifier', 'colspec', 'comment', 'compound', 'contact', 'container',
     'copyright', 'danger', 'date', 'decoration', 'definition',
-    'definition_list', 'definition_list_item', 'description', 'docinfo', 
-    'doctest_block', 'document', 'emphasis', 'entry', 'enumerated_list', 
-    'error', 'field', 'field_body', 'field_list', 'field_name', 'figure', 
-    'footer', 'footnote', 'footnote_reference', 'generated', 'header', 
-    'hint', 'image', 'important', 'inline', 'label', 'legend', 'line', 
-    'line_block', 'list_item', 'literal', 'literal_block', 'math', 
-    'math_block', 'note', 'option' ,'option_argument', 'option_group', 
-    'option_list', 'option_list_item', 'option_string', 'organization', 
-    'paragraph', 'pending', 'problematic', 'raw', 'reference', 'revision', 
-    'row', 'rubric', 'section', 'sidebar', 'status', 'strong', 'subscript', 
-    'substitution_definition', 'substitution_reference', 'subtitle', 
-    'superscript', 'system_message', 'table', 'target', 'tbody,' 'term', 
-    'tgroup', 'thead', 'tip', 'title', 'title_reference', 'topic', 
+    'definition_list', 'definition_list_item', 'description', 'docinfo',
+    'doctest_block', 'document', 'emphasis', 'entry', 'enumerated_list',
+    'error', 'field', 'field_body', 'field_list', 'field_name', 'figure',
+    'footer', 'footnote', 'footnote_reference', 'generated', 'header',
+    'hint', 'image', 'important', 'inline', 'label', 'legend', 'line',
+    'line_block', 'list_item', 'literal', 'literal_block', 'math',
+    'math_block', 'note', 'option' ,'option_argument', 'option_group',
+    'option_list', 'option_list_item', 'option_string', 'organization',
+    'paragraph', 'pending', 'problematic', 'raw', 'reference', 'revision',
+    'row', 'rubric', 'section', 'sidebar', 'status', 'strong', 'subscript',
+    'substitution_definition', 'substitution_reference', 'subtitle',
+    'superscript', 'system_message', 'table', 'target', 'tbody,' 'term',
+    'tgroup', 'thead', 'tip', 'title', 'title_reference', 'topic',
     'transition','version','warning',)
 
-##TODO Eventually we should silently ignore unsupported reStructuredText 
+##TODO Eventually we should silently ignore unsupported reStructuredText
 ##     constructs and document somewhere that they are not supported.
 ##     In the meantime raise a warning *once* for each unsupported element.
 _warned = set()
@@ -245,4 +206,3 @@ def visit_unsupported(self, node):
 for element in rst_elements:
     if not hasattr(Translator, 'visit_' + element):
         setattr(Translator, 'visit_' + element , visit_unsupported)
-

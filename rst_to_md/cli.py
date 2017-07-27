@@ -1,10 +1,12 @@
 from docutils.core import default_description, publish_cmdline
 
-from .converter import Writer
+from .writer import Writer
 
 
 def main():
-    description = ('Generates Markdown from standalone reStructuredText sources.  ' + default_description)
+    description = 'Generates Markdown from standalone '\
+                  'reStructuredText sources. {}'.format(
+                      default_description)
     publish_cmdline(writer=Writer(), description=description)
 
 
