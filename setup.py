@@ -55,7 +55,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-           'rst-to-md = rst_to_md.cli:main',
+            'rst-to-md = rst_to_md.cli:main',
+            'rst-dump = rst_to_md.dump:main',
         ],
     },
     long_description=long_description,
