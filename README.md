@@ -22,8 +22,9 @@ $ rst-to-md my_doc.rst > my_doc.md
 
 ## How to use for Leanpub publication
 
-The main reason we created this tool is to support our Leanpub work involves a
-lot of reStructuredText-to-Markdown conversion. In general you can use `rst-to-md` to directly convert our `*.rst` sources to `*.md` like this:
+The main reason we created this tool is to support our Leanpub work which
+involves a lot of reStructuredText-to-Markdown conversion. In general you can
+use `rst-to-md` to directly convert our `*.rst` sources to `*.md` like this:
 
 ```
 rst-to-md module_1.rst > chapter_1.md
