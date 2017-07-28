@@ -6,7 +6,6 @@ class Context:
         self.head = []
         self.body = []
         self.foot = []
-        self.next = None
 
     def put_head(self, text):
         self.head.append(text)
@@ -38,7 +37,7 @@ class Translator(nodes.NodeVisitor):
         lcode = settings.language_code
         self.language = languages.get_language(lcode, document.reporter)
 
-        self.output = Context()
+        self._context = [Context()]
 
         self.section_level = 0
 
@@ -67,15 +66,18 @@ class Translator(nodes.NodeVisitor):
 
     # Utility methods
 
+    @property
+    def output(self):
+        return self._context[-1]
+
     def push_context(self, ctx):
-        ctx.next = self.output
-        self.output = ctx
+        self._context.append(ctx)
 
     def pop_context(self):
-        head = self.output
+        head = self._context[-1]
         head.finalize()
-        self.output = head.next
-        self.output += head
+        self._context = self._context[:-1]
+        self._context[-1] += head
 
     def astext(self):
         """Return the final formatted document as a string."""
