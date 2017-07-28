@@ -45,6 +45,41 @@ In that case, you probably need to update `rst_to_md/translator.py` to handle
 those elements. Generally this is very straightforward, and you can see all of
 the existing examples to get insight.
 
+## Tracking down unsupported blocks
+
+Sometimes `rst-to-md` will report unsupported blocks for reasons that are hard
+to spot visually. A good example is reStructured Text like this::
+
+```
+This is some sample code:
+
+  >>> x = 1
+  1
+
+And so forth...
+```
+
+The intent here is (probably) to include a code snippet. However, because the
+word "code" is only followed by a single ":" rather than "::", docutils parses
+this as a `doctest_block`, and `rst-to-md` will report something like:
+
+```
+sample.rst:7: (WARNING/2) The doctest_block element is not supported.
+```
+
+Since the tool doesn't report line numbers, and because the ":"-"::" difference
+can be hard to spot (esp. at the end of a long day of editing), it's often
+easier to use the `rst-dump` tool which is installed alongside `rst-to-md`. Use
+it something like this:
+
+```
+rst-dump <rst-doc>
+```
+
+This will print the docutils tree structure for your document, and you can
+search therein for the offending element. This will often make it trivial to
+spot what's going on.
+
 ## Tests
 
 There are a few unit tests for tricky parts of the implementation. First install
