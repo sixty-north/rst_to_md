@@ -1,5 +1,7 @@
 # rst_to_md
 
+[![Build Status](https://travis-ci.org/sixty-north/rst_to_md.png?branch=master)]
+
 A Markdown writer for Docutils.
 
 This writer lets you convert reStructuredText documents to Markdown with
