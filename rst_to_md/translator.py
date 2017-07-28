@@ -9,7 +9,7 @@ class Context:
         self.next = None
 
     def put_head(self, text):
-        self.output.put_head(text)
+        self.head.append(text)
 
     def put_body(self, text):
         self.body.append(text)
@@ -238,10 +238,24 @@ class Translator(nodes.NodeVisitor):
         pass
 
     def visit_list_item(self, node):
-        pass
+        def fix_crs(text):
+            return text\
+                .replace('\n', '\n  ')\
+                .replace('\n  \n', '\n\n')  # remove trailing whitespace.
+
+        # TODO: Perhaps trailing whitepace removal should be a global operation.
+
+        class ListItemContext(Context):
+            def finalize(self):
+                front = ['- {}'.format(fix_crs(l)) for l in self.body[:1]]
+                middle = [fix_crs(e) for e in self.body[1:-1]]
+                back = self.body[-1:]
+                self.body = front + middle + back
+
+        self.push_context(ListItemContext())
 
     def depart_list_item(self, node):
-        pass
+        self.pop_context()
 
 # The following code adds visit/depart methods for any reSturcturedText element
 # which we have not explicitly implemented above.
