@@ -7,7 +7,11 @@ some text with line breaks as well. Who know?
 It's all quite a mystery.
 """
 
-    expected = rst
+    expected = """Some goes here. Maybe
+some text with line breaks as well. Who know?
+It's all quite a mystery.
+
+"""
 
     md = rst_to_md(rst)
     assert md == expected

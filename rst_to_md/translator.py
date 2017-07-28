@@ -1,5 +1,33 @@
 from docutils import nodes, languages
-from functools import reduce
+
+
+class Context:
+    def __init__(self):
+        self.head = []
+        self.body = []
+        self.foot = []
+        self.next = None
+
+    def put_head(self, text):
+        self.output.put_head(text)
+
+    def put_body(self, text):
+        self.body.append(text)
+
+    def put_foot(self, text):
+        self.foot.append(text)
+
+    def finalize(self):
+        pass
+
+    def __add__(self, other):
+        self.head += other.head
+        self.body += other.body
+        self.foot += other.foot
+        return self
+
+    def astext(self):
+        return ''.join(self.head + self.body + self.foot)
 
 
 class Translator(nodes.NodeVisitor):
@@ -10,12 +38,7 @@ class Translator(nodes.NodeVisitor):
         lcode = settings.language_code
         self.language = languages.get_language(lcode, document.reporter)
 
-        self.head = []
-        self.body = []
-        self.foot = []
-
-        self.text_hooks = []
-        self.paragraph_hooks = []
+        self.output = Context()
 
         self.section_level = 0
 
@@ -44,22 +67,19 @@ class Translator(nodes.NodeVisitor):
 
     # Utility methods
 
-    def push_text_hook(self, p):
-        self.text_hooks.append(p)
+    def push_context(self, ctx):
+        ctx.next = self.output
+        self.output = ctx
 
-    def pop_text_hook(self):
-        self.text_hooks = self.text_hooks[:-1]
-
-    def push_paragraph_hook(self, p):
-        self.paragraph_hooks.append(p)
-
-    def pop_paragraph_hook(self):
-        self.paragraph_hooks = self.paragraph_hooks[:-1]
-
+    def pop_context(self):
+        head = self.output
+        head.finalize()
+        self.output = head.next
+        self.output += head
 
     def astext(self):
         """Return the final formatted document as a string."""
-        return ''.join(self.head + self.body + self.foot)
+        return self.output.astext()
 
     # TODO: Why are we doing this?
     def deunicode(self, text):
@@ -70,51 +90,44 @@ class Translator(nodes.NodeVisitor):
     def ensure_eol(self):
         """Ensure the last line in body is terminated by new line."""
         if self.body and self.body[-1][-1] != '\n':
-            self.body.append('\n')
+            self.output.put_body('\n')
 
     # Node visitor methods
 
     # TODO: Can we peek ahead to try to determine the language type?
     # TODO: Can we let the user specify the default language to use here?
     def visit_literal_block(self, node):
-        self.body.append('{language=python}\n')
-        self.body.append('~~~~~~~~\n')
+        self.output.put_body('{language=python}\n')
+        self.output.put_body('~~~~~~~~\n')
 
     def depart_literal_block(self, node):
-        self.body.append('\n~~~~~~~~\n\n')
+        self.output.put_body('\n~~~~~~~~\n\n')
 
     def visit_literal(self, node):
-        self.body.append(self.defs['literal'][0])
+        self.output.put_body(self.defs['literal'][0])
 
     def depart_literal(self, node):
-        self.body.append(self.defs['literal'][1])
+        self.output.put_body(self.defs['literal'][1])
 
     def visit_block_quote(self, node):
-        def quoter(text_node, text):
-            if text_node.parent.parent is not node:
-                return text
-
-            text = text.replace('\n', '\n> ')
-            return text
-
-        self.body.append('> ')
-        self.push_text_hook(quoter)
+        class QuoteContext(Context):
+            def finalize(self):
+                quoted = ['> {}'.format(line) for line in self.body[:1]] + self.body[1:]
+                quoted = [line.replace('\n', '\n> ') for line in quoted[:-1]] + quoted[-1:]
+                self.body = quoted
+        self.push_context(QuoteContext())
 
     def depart_block_quote(self, node):
-        self.pop_text_hook()
-        self.body.append('\n')
+        self.pop_context()
 
     def visit_Text(self, node):
-        text = reduce(lambda t, h: h(node, t),
-                      self.text_hooks,
-                      node.astext())
-        self.body.append(text)
+        self.output.put_body(node.astext())
 
     def depart_Text(self, node):
         pass
 
     def visit_comment(self, node):
-        self.body.append('<!-- ' + node.astext() + ' -->\n')
+        self.output.put_body('<!-- ' + node.astext() + ' -->\n')
         raise nodes.SkipNode
 
     def visit_docinfo_item(self, node, name):
@@ -131,25 +144,24 @@ class Translator(nodes.NodeVisitor):
         pass
 
     def visit_emphasis(self, node):
-        self.body.append(self.defs['emphasis'][0])
+        self.output.put_body(self.defs['emphasis'][0])
 
     def depart_emphasis(self, node):
-        self.body.append(self.defs['emphasis'][1])
+        self.output.put_body(self.defs['emphasis'][1])
 
     def visit_paragraph(self, node):
+        pass
         # self.ensure_eol()
-        for hook in self.paragraph_hooks:
-            hook(node)
-        # self.body.append('\n')
+        # self.output.put_body('\n')
 
     def depart_paragraph(self, node):
-        self.body.append('\n\n')
+        self.output.put_body('\n\n')
 
     def visit_problematic(self, node):
-        self.body.append(self.defs['problematic'][0])
+        self.output.put_body(self.defs['problematic'][0])
 
     def depart_problematic(self, node):
-        self.body.append(self.defs['problematic'][1])
+        self.output.put_body(self.defs['problematic'][1])
 
     def visit_section(self, node):
         self.section_level += 1
@@ -158,16 +170,16 @@ class Translator(nodes.NodeVisitor):
         self.section_level -= 1
 
     def visit_strong(self, node):
-        self.body.append(self.defs['strong'][0])
+        self.output.put_body(self.defs['strong'][0])
 
     def depart_strong(self, node):
-        self.body.append(self.defs['strong'][1])
+        self.output.put_body(self.defs['strong'][1])
 
     def visit_subscript(self, node):
-        self.body.append(self.defs['subscript'][0])
+        self.output.put_body(self.defs['subscript'][0])
 
     def depart_subscript(self, node):
-        self.body.append(self.defs['subscript'][1])
+        self.output.put_body(self.defs['subscript'][1])
 
     def visit_subtitle(self, node):
         if isinstance(node.parent, nodes.document):
@@ -175,11 +187,11 @@ class Translator(nodes.NodeVisitor):
             raise nodes.SkipNode
 
     def visit_superscript(self, node):
-        self.body.append(self.defs['superscript'][0])
+        self.output.put_body(self.defs['superscript'][0])
 
     def depart_superscript(self, node):
 
-        self.body.append(self.defs['superscript'][1])
+        self.output.put_body(self.defs['superscript'][1])
 
     def visit_system_message(self, node):
         # TODO add report_level
@@ -194,7 +206,7 @@ class Translator(nodes.NodeVisitor):
             line = ', line %s' % node['line']
         else:
             line = ''
-        self.body.append('"System Message: %s/%s (%s:%s)"\n'
+        self.output.put_body('"System Message: %s/%s (%s:%s)"\n'
             % (node['type'], node['level'], node['source'], line))
 
     def depart_system_message(self, node):
@@ -202,21 +214,21 @@ class Translator(nodes.NodeVisitor):
 
     def visit_title(self, node):
         if self.section_level == 0:
-            self.head.append('# {0}\n'.format(node.astext()))
+            self.output.put_head('# {0}\n'.format(node.astext()))
             self._docinfo['title'] = node.astext()
             raise nodes.SkipNode
         else:
-            self.body.append('{0} {1}\n'.format((self.section_level+1)*'#',
+            self.output.put_body('{0} {1}\n'.format((self.section_level+1)*'#',
                 self.deunicode(node.astext())))
             raise nodes.SkipNode
 
     def depart_title(self, node):
-        self.body.append('\n')
+        self.output.put_body('\n')
 
     def visit_transition(self, node):
         # Simply replace a transition by a horizontal rule.
         # Could use three or more '*', '_' or '-'.
-        self.body.append('\n---\n\n')
+        self.output.put_body('\n---\n\n')
         raise nodes.SkipNode
 
     def visit_bullet_list(self, node):
@@ -226,11 +238,7 @@ class Translator(nodes.NodeVisitor):
         pass
 
     def visit_list_item(self, node):
-        def list_item(node, text):
-            self.pop_text_hook()
-            return '- {}'.format(text)
-
-        self.push_text_hook(list_item)
+        pass
 
     def depart_list_item(self, node):
         pass

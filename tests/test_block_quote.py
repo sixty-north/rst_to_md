@@ -12,7 +12,6 @@ def test_basic_block_quote():
     expected = """> This is a test.
 > Only a test.
 
-
 """
 
     md = rst_to_md(rst)
@@ -28,7 +27,6 @@ def test_inline_elements():
     expected = """\
 > This is **a** test.
 > Only a test.
-
 
 """
 
