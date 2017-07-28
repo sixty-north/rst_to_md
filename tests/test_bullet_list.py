@@ -86,3 +86,35 @@ def test_multiparagraph_list_item():
     md = rst_to_md(rst)
 
     assert md == expected
+
+
+def test_nested_bullet_list():
+    rst = """\
+- point
+- point
+
+  - sub-point
+  - sub-point **2**
+
+    - sub-**sub**-point
+    - and so forth
+"""
+
+    expected = """\
+- point
+
+- point
+
+  - sub-point
+
+  - sub-point **2**
+
+    - sub-**sub**-point
+
+    - and so forth
+
+"""
+
+    md = rst_to_md(rst)
+
+    assert md == expected
