@@ -42,3 +42,18 @@ module_1.rst:: (WARNING/2) The bullet_list element is not supported.
 In that case, you probably need to update `rst_to_md/translator.py` to handle
 those elements. Generally this is very straightforward, and you can see all of
 the existing examples to get insight.
+
+## Tests
+
+There are a few unit tests for tricky parts of the implementation. First install
+the necessary dependencies:
+
+```
+$ pip install -e ".[test]"
+```
+
+Run the tests with pytest:
+
+```
+$ pytest tests
+```
