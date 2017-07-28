@@ -6,7 +6,7 @@ matrix:
   fast_finish: true
 
 install:
-  - python setup.py install
+  - pip install .
   - pip install -e ".[test]"
 
 script:
