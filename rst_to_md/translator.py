@@ -232,6 +232,8 @@ class Translator(nodes.NodeVisitor):
         raise nodes.SkipNode
 
     def visit_bullet_list(self, node):
+        # There's nothing to do here, but we need this handler to avoid
+        # conversion warnings.
         pass
 
     def depart_bullet_list(self, node):
@@ -256,6 +258,19 @@ class Translator(nodes.NodeVisitor):
 
     def depart_list_item(self, node):
         self.pop_context()
+
+    def visit_reference(self, node):
+        self.output.put_body('[')
+
+    def depart_reference(self, node):
+        self.output.put_body(']({})'.format(node.attributes['refuri']))
+
+    def visit_target(self, node):
+        # We don't do targets right now. Should we?
+        pass
+
+    def depart_target(self, node):
+        pass
 
 # The following code adds visit/depart methods for any reSturcturedText element
 # which we have not explicitly implemented above.
