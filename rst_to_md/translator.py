@@ -94,14 +94,19 @@ class Translator(nodes.NodeVisitor):
 
     # Node visitor methods
 
-    # TODO: Can we peek ahead to try to determine the language type?
     # TODO: Can we let the user specify the default language to use here?
     def visit_literal_block(self, node):
-        self.output.put_body('{language=python}\n')
-        self.output.put_body('~~~~~~~~\n')
+        class LiteralContext(Context):
+            def finalize(self):
+                language = 'python'
+                if self.body and self.body[0].startswith('>>>'):
+                    language = 'pycon'
+                self.body = ['{{language={}}}\n~~~~~~~~\n'.format(language)] + self.body + ['\n~~~~~~~~\n\n']
+
+        self.push_context(LiteralContext())
 
     def depart_literal_block(self, node):
-        self.output.put_body('\n~~~~~~~~\n\n')
+        self.pop_context()
 
     def visit_literal(self, node):
         self.output.put_body(self.defs['literal'][0])
