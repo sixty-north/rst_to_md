@@ -134,7 +134,7 @@ class Translator(nodes.NodeVisitor):
         pass
 
     def visit_comment(self, node):
-        self.output.put_body('<!-- ' + node.astext() + ' -->\n')
+        # self.body.append('<!-- ' + node.astext() + ' -->\n')
         raise nodes.SkipNode
 
     def visit_docinfo_item(self, node, name):
