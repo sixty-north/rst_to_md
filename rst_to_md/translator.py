@@ -246,6 +246,12 @@ class Translator(nodes.NodeVisitor):
     def depart_bullet_list(self, node):
         pass
 
+    def visit_enumerated_list(self, node):
+        pass
+
+    def depart_enumerated_list(self, node):
+        pass
+
     def visit_list_item(self, node):
         def fix_crs(text):
             return text\
