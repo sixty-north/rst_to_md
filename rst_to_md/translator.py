@@ -62,7 +62,8 @@ class Translator(nodes.NodeVisitor):
             'subscript': ('<sub>', '</sub>'),
             'superscript': ('<sup>', '</sup>'),
             'literal': ('`', '`'),
-            }
+            'math': ('$', '$'),
+        }
 
     # Utility methods
 
@@ -284,6 +285,22 @@ class Translator(nodes.NodeVisitor):
 
     def depart_target(self, node):
         pass
+
+    def visit_math(self, node):
+        self.output.put_body(self.defs['math'][0])
+
+    def depart_math(self, node):
+        self.output.put_body(self.defs['math'][1])
+
+    def visit_math_block(self, node):
+        class MathContext(Context):
+            def finalize(self):
+                self.body = ['$$\n'] + [line.strip() for line in self.body] + ['\n$$\n\n']
+
+        self.push_context(MathContext())
+
+    def depart_math_block(self, node):
+        self.pop_context()
 
 # The following code adds visit/depart methods for any reSturcturedText element
 # which we have not explicitly implemented above.
