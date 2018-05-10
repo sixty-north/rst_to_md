@@ -53,3 +53,39 @@ Good stuff!
 
     md = rst_to_md(rst)
     assert md == expected
+
+
+def test_javascript_code_block():
+    """
+    Common Doctils extensions allow non-python language specification
+    using ``code`` and `code-block`` directives.
+
+    Refs:
+
+    * http://www.sphinx-doc.org/en/stable/markup/code.html
+    * http://docs.getpelican.com/en/stable/content.html#syntax-highlighting
+    """
+    rst = """\
+Some code:
+
+.. code:: javascript
+
+  x=1;
+
+Good stuff!
+"""
+
+    expected = """\
+Some code:
+
+{language=javascript}
+~~~~~~~~
+x=1;
+~~~~~~~~
+
+Good stuff!
+
+"""
+
+    md = rst_to_md(rst)
+    assert md == expected
