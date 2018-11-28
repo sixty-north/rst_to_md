@@ -99,14 +99,26 @@ class Translator(nodes.NodeVisitor):
 
     # TODO: Can we let the user specify the default language to use here?
     def visit_literal_block(self, node):
+        language = 'python'
+        # AFAICT language is just another class name.
+        # Can there be additional classes than the language name?
+        for class_name in node.attributes['classes']:
+            if class_name not in ('code', 'code-block'):
+                language = class_name
+                break
         class LiteralContext(Context):
+            def __init__(self, language, *args, **kwargs):
+                # passing language in constructor avoids scoping difficulties
+                self.language = language
+                super(LiteralContext, self).__init__(*args, **kwargs)
+
             def finalize(self):
-                language = 'python'
-                if self.body and self.body[0].startswith('>>>'):
+                language = self.language
+                if self.body and self.body[0].startswith('>>>') and language=='python':
                     language = 'pycon'
                 self.body = ['{{language={}}}\n~~~~~~~~\n'.format(language)] + self.body + ['\n~~~~~~~~\n\n']
 
-        self.push_context(LiteralContext())
+        self.push_context(LiteralContext(language))
 
     def depart_literal_block(self, node):
         self.pop_context()
@@ -116,6 +128,14 @@ class Translator(nodes.NodeVisitor):
 
     def depart_literal(self, node):
         self.output.put_body(self.defs['literal'][1])
+
+    def visit_inline(self, node):
+        # We need to silently handle inlines because sometimes (Can't work out when)
+        # spurious inlines are generated in code blocks
+        pass
+
+    def depart_inline(self, node):
+        pass
 
     def visit_block_quote(self, node):
         class QuoteContext(Context):
