@@ -44,6 +44,9 @@ setup(
     include_package_data=True,
     install_requires=[
         'docutils',
+
+        # vvv This is a docutils dependency that they apparently don't specify
+        'pygments',
     ],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax, for
